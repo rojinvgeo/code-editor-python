@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title style="color: aliceblue;">Simple Python Code Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .editor-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        #codeEditor {
+            width: 100%;
+            height: 400px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        #runButton {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        #runButton:hover {
+            background-color: #45a049;
+        }
+
+        .output-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #output {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+        }
+
+        .editor-container {
+            position: relative;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">Simple Python Code Editor</h1>
+        
+        <div class="editor-container">
+            <textarea 
+                id="codeEditor" 
+                placeholder="Write your code here..."
+                spellcheck="false"
+            ></textarea>
+            <button id="runButton" onclick="runCode()">Run Code</button>
+        </div>
+
+        <div class="output-container">
+            <h3>Output:</h3>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.5.4/dist/socket.io.js"></script>
+    <script>
+        var socket = io();
+
+        socket.on('code_output', function(data) {
+            const outputDiv = document.getElementById('output');
+            outputDiv.textContent = data.output;
+            if (data.error) {
+                outputDiv.style.color = 'red';
+            } else {
+                outputDiv.style.color = '#333';
+            }
+        });
+
+        function runCode() {
+            const code = document.getElementById('codeEditor').value;
+            socket.emit('run_code', { code: code });
+        }
+    </script>
+
+    <script>
+    let keywords = [
+        'and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue',
+        'def', 'del', 'elif:', 'else:', 'except', 'finally', 'for', 'from',
+        'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not',
+        'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield',
+        'True', 'False', 'None'
+    ];
+
+    let builtInFunctions = [
+        'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'bytearray', 'bytes',
+        'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dict',
+        'dir', 'divmod', 'enumerate', 'eval', 'exec', 'filter', 'float',
+        'format', 'frozenset', 'getattr', 'globals', 'hasattr', 'hash',
+        'help', 'hex', 'id', 'input', 'int', 'isinstance', 'issubclass',
+        'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview',
+        'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print',
+        'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr',
+        'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple',
+        'type', 'vars', 'zip'
+    ];
+
+    let suggestions = keywords.concat(builtInFunctions);
+
+    let codeEditor = document.getElementById('codeEditor');
+
+    let suggestionsDiv = document.createElement('div');
+    suggestionsDiv.id = 'suggestions';
+    suggestionsDiv.style.position = 'absolute';
+    suggestionsDiv.style.zIndex = '1';
+    suggestionsDiv.style.background = '#f9f9f9';
+    suggestionsDiv.style.border = '1px solid #ccc';
+    suggestionsDiv.style.width = '200px';
+    codeEditor.parentNode.appendChild(suggestionsDiv);
+
+    function showSuggestions(inputValue) {
+        let matches = suggestions.filter(suggestion => suggestion.startsWith(inputValue));
+        suggestionsDiv.innerHTML = '';
+
+        if (matches.length > 0) {
+            matches.forEach(match => {
+                let suggestionElement = document.createElement('div');
+                suggestionElement.textContent = match;
+                suggestionElement.style.padding = '5px';
+                suggestionElement.style.cursor = 'pointer';
+                suggestionElement.onmouseover = () => {
+                    suggestionElement.style.background = '#ccc';
+                };
+                suggestionElement.onmouseout = () => {
+                    suggestionElement.style.background = '';
+                };
+                suggestionElement.onclick = () => {
+                    let currentValue = codeEditor.value;
+                    let lastSpaceIndex = currentValue.lastIndexOf(' ');
+                    if (lastSpaceIndex !== -1) {
+                        codeEditor.value = currentValue.substring(0, lastSpaceIndex + 1) + match;
+                    } else {
+                        codeEditor.value = match;
+                    }
+                    suggestionsDiv.innerHTML = '';
+                };
+                suggestionsDiv.appendChild(suggestionElement);
+            });
+        }
+    }
+codeEditor.addEventListener('input', () => {
+    let inputValue = codeEditor.value.split(' ').pop();
+    if (inputValue) {
+        showSuggestions(inputValue);
+        let caretPosition = getCaretPosition(codeEditor);
+        let rect = codeEditor.getBoundingClientRect();
+        suggestionsDiv.style.top = (rect.top + caretPosition.top + 20) + 'px';
+        suggestionsDiv.style.left = (rect.left + caretPosition.left) + 'px';
+    } else {
+        suggestionsDiv.innerHTML = '';
+    }
+});
+
+function getCaretPosition(element) {
+    let caretPosition = { top: 0, left: 0 };
+    let selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        let range = selection.getRangeAt(0);
+        let rect = range.getBoundingClientRect();
+        caretPosition.top = rect.top - element.getBoundingClientRect().top;
+        caretPosition.left = rect.left - element.getBoundingClientRect().left;
+    }
+    return caretPosition;
+}
+</script>
+
+
+</body>
+</html>
