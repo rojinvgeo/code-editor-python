@@ -1,7 +1,6 @@
-
 import eventlet
 eventlet.monkey_patch()
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
 from flask_socketio import SocketIO, emit
 import subprocess
 import os
@@ -25,19 +24,24 @@ def handle_connect():
 
 @socketio.on('run_code')
 def run_code(data):
+    sid = request.sid
     try:
         code = data['code']
-        process = subprocess.Popen(['python', '-c', code], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, error = process.communicate()
-        output = output.decode('utf-8')
-        error = error.decode('utf-8')
 
-        if error:
-            emit('code_output', {'output': f'Error: {error}', 'error': True})
-        else:
-            emit('code_output', {'output': output, 'error': False})
+        def execute_code(code, sid):
+            process = subprocess.Popen(['python', '-c', code], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, error = process.communicate()
+            output = output.decode('utf-8')
+            error = error.decode('utf-8')
+
+            if error:
+                socketio.emit('code_output', {'output': f'Error: {error}', 'error': True}, room=sid)
+            else:
+                socketio.emit('code_output', {'output': output, 'error': False}, room=sid)
+
+        eventlet.spawn(execute_code, code, sid)
     except Exception as e:
-        emit('code_output', {'output': f'Error: {str(e)}', 'error': True})
+        socketio.emit('code_output', {'output': f'Error: {str(e)}', 'error': True}, room=sid)
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -45,4 +49,4 @@ def handle_disconnect():
     
 if __name__ == '__main__':
     print("Running on http://localhost:5000/")
-    socketio.run(app, host='localhost', port=5000, debug=True)
+    socketio.run(app)
