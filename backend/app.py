@@ -1,17 +1,20 @@
 from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, emit
 import subprocess
+import os
+
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
+frontend_dir = os.path.join(os.path.dirname(__file__), '..', 'frontend')
 @app.route('/')
 def serve_index():
-    return send_from_directory(r'D:\code-editor\frontend', 'index.html')
+    return send_from_directory(frontend_dir, 'index.html')
 
 @app.route('/<path:path>')
 def serve_static(path):
-    return send_from_directory('frontend', path)
+    return send_from_directory(frontend_dir, path)
 
 @socketio.on('connect')
 def handle_connect():
