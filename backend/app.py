@@ -1,9 +1,11 @@
+
+import eventlet
+eventlet.monkey_patch()
 from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, emit
 import subprocess
 import os
-import eventlet
-eventlet.monkey_patch()
+
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
